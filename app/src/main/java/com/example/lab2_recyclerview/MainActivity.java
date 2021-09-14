@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
                         restore_fab.setEnabled(false);
                     }
                 } catch (IndexOutOfBoundsException e) {
-                    // TODO : Add toast notification for user
                     System.out.println("Trash bin empty");
                 }
             }
@@ -81,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private void initializeData(){
         deleted_contacts = new ArrayList<ContactDataModel>();
         contacts = new ArrayList<ContactDataModel>();
+        // TODO : Generate contacts + add 'refresh' action to toolbar
         contacts.add(new ContactDataModel("Diala", "diala.naboulsi@etsmtl.ca", "(514) 396- 8800", "person"));
         contacts.add(new ContactDataModel("Tintin", "tintin@milou.ca", "(514) 396-8800", "person"));
         contacts.add(new ContactDataModel("Tom", "tom@jerry.ca", "(514) 396-8800", "person"));
