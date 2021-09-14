@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Lab2-RecyclerView</string>
+
+    <!-- Floating action button -->
+    <string name="restore_fab_desc">Restore last deleted contact</string>
+    <string name="restore_fav_text">Restore</string>
 </resources>
