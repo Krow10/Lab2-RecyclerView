@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="photo_circle_size">64dp</dimen>
+    <integer name="max_generated_contacts">20</integer>
+    <integer name="refresh_rotation_animation_speed">500</integer>
 </resources>

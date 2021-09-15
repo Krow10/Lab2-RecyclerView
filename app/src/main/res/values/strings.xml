@@ -4,4 +4,8 @@
     <!-- Floating action button -->
     <string name="restore_fab_desc">Restore last deleted contact</string>
     <string name="restore_fav_text">Restore</string>
+
+    <!-- App bar -->
+    <string name="refresh_contacts_desc">Refresh the list with newly generated contacts</string>
+    <string name="refresh_contacts_text">Refresh</string>
 </resources>
