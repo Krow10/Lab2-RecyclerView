@@ -2,6 +2,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_trash_bin"
+        android:icon="@drawable/ic_baseline_delete_24"
+        android:title="@string/trash_bin_text"
+        android:contentDescription="@string/trash_bin_desc"
+        app:showAsAction="ifRoom"
+        app:actionLayout="@layout/action_trash_bin"/>
+    <item
         android:id="@+id/action_refresh_contacts"
         android:icon="@drawable/ic_baseline_cached_24"
         android:title="@string/refresh_contacts_text"

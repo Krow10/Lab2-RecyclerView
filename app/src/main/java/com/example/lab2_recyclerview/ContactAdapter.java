@@ -1,5 +1,7 @@
 package com.example.lab2_recyclerview;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;

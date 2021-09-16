@@ -6,6 +6,8 @@
     <string name="restore_fav_text">Restore</string>
 
     <!-- App bar -->
+    <string name="trash_bin_desc">Show previously deleted contacts</string>
+    <string name="trash_bin_text">Deleted</string>
     <string name="refresh_contacts_desc">Refresh the list with newly generated contacts</string>
     <string name="refresh_contacts_text">Refresh</string>
 </resources>

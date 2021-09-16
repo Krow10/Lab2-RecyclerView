@@ -3,4 +3,5 @@
     <dimen name="photo_circle_size">64dp</dimen>
     <integer name="max_generated_contacts">20</integer>
     <integer name="refresh_rotation_animation_speed">500</integer>
+    <integer name="card_fade_in_animation_speed">250</integer>
 </resources>
