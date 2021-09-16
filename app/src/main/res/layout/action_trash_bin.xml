@@ -3,7 +3,7 @@
     android:layout_width="48dp"
     android:layout_height="48dp">
 
-    <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    <ImageView
         android:id="@+id/iv_trash"
         android:layout_width="24dp"
         android:layout_height="24dp"

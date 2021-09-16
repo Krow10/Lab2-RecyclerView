@@ -20,8 +20,8 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/iv_photo"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="@dimen/photo_circle_size"
+                android:layout_height="@dimen/photo_circle_size"
                 android:layout_centerVertical="true"
                 android:layout_margin="8dp"
                 app:shapeAppearance="@style/roundedImageView"

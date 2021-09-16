@@ -1,7 +1,5 @@
 package com.example.lab2_recyclerview;
 
-import android.provider.ContactsContract;
-
 public class ContactDataModel {
     private String name;
     private String emailAddress;
