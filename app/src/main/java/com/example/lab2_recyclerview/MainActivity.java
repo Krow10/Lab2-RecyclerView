@@ -16,8 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.badge.BadgeUtils;
@@ -25,10 +26,9 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Random;
 import java.util.function.Function;
 
 public class MainActivity extends AppCompatActivity {
@@ -94,7 +94,10 @@ public class MainActivity extends AppCompatActivity {
                 contacts.add(0, restored_contact);
                 adapter.notifyItemInserted(0);
                 updateTrashCounter(deleted_contacts.size());
+
                 contacts_recyclerview.smoothScrollToPosition(0); // Scroll back to top
+                AppBarLayout l = findViewById(R.id.appbar_layout);
+                l.setExpanded(true); // Show app bar to stay consistent with manual scroll behavior
 
                 // If 'trash bin' is empty, disable the restore button
                 if (deleted_contacts.isEmpty())
@@ -163,45 +166,27 @@ public class MainActivity extends AppCompatActivity {
         // Setup API request for random names
         RequestQueue queue = Volley.newRequestQueue(this);
         final int max_generated_contacts = getResources().getInteger(R.integer.max_generated_contacts);
-        String url = "http://names.drycodes.com/" + max_generated_contacts + "?nameOptions=boy_names"; // Can't mix boy/girl names... (requires multiple API calls)
+        String url = "https://randomuser.me/api?noinfo&nat=ca,us,fr&inc=name,picture,email,cell&results=" + max_generated_contacts;
 
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest
-                (Request.Method.GET, url, null, (JSONArray response) -> {
-                    for (int i = 0; i < max_generated_contacts; i++){
-                        try {
-                            final String[] split_result = response.get(i).toString().split("_");
-                            final String name = split_result[0];
-                            final String surname = split_result[1];
-                            final String phone = generatePhoneNumber();
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, (JSONObject response) -> {
+                    try {
+                        final JSONArray results = (JSONArray) response.get("results");
+                        for (int i = 0; i < max_generated_contacts; i++) {
+                            final JSONObject person = (JSONObject) results.get(i);
+                            final JSONObject name = (JSONObject) person.get("name");
+                            final JSONObject pic = (JSONObject) person.get("picture");
 
-                            contacts.add(0, new ContactDataModel(name + " " + surname,
-                                    name.toLowerCase(Locale.ROOT) + "." + surname.toLowerCase(Locale.ROOT) + "@etsmtl.ca",
-                                    phone, "person"));
+                            contacts.add(0, new ContactDataModel(name.getString("first") + " " + name.getString("last"),
+                                    person.getString("email"), person.getString("cell"), pic.getString("large")));
                             adapter.notifyItemInserted(0);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
                         }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
                 }, error -> System.err.println("Error fetching data  : " + error.getMessage()));
 
-        queue.add(jsonArrayRequest);
-    }
-
-    // Original from @joeyv (https://gist.github.com/joeyv/7087747)
-    private String generatePhoneNumber(){
-        int num1, num2, num3; // Area code
-        int set2, set3;
-
-        Random generator = new Random();
-
-        num1 = generator.nextInt(7) + 1; // Add one so there is no zero to begin
-        num2 = generator.nextInt(8);
-        num3 = generator.nextInt(8);
-
-        set2 = generator.nextInt(643) + 100;
-        set3 = generator.nextInt(8999) + 1000;
-
-        return "(" + num1 + "" + num2 + "" + num3 + ")" + "-" + set2 + "-" + set3;
+        queue.add(jsonObjectRequest);
     }
 
     private void setRestoreFabEnabled(final boolean enabled){

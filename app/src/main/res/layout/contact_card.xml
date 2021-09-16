@@ -18,19 +18,14 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/iv_photo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_baseline_circle_24"/>
-
-            <TextView
-                android:id="@+id/tv_initial"
-                android:layout_width="@dimen/photo_circle_size"
-                android:layout_height="@dimen/photo_circle_size"
-                android:gravity="center"
-                android:textAppearance="?attr/textAppearanceHeadline4"
-                android:textColor="@color/white"/>
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerVertical="true"
+                android:layout_margin="8dp"
+                app:shapeAppearance="@style/roundedImageView"
+                app:strokeWidth="0dp"/>
 
             <LinearLayout
                 android:id="@+id/contact_info_holder"
@@ -38,6 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_toEndOf="@+id/iv_photo"
                 android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:orientation="vertical">
 
                 <TextView
