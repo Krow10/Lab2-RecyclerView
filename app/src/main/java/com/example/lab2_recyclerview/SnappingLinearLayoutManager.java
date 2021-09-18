@@ -27,13 +27,11 @@ public class SnappingLinearLayoutManager extends LinearLayoutManager {
     private class TopSnappedSmoothScroller extends LinearSmoothScroller {
         public TopSnappedSmoothScroller(Context context) {
             super(context);
-
         }
 
         @Override
         public PointF computeScrollVectorForPosition(int targetPosition) {
-            return SnappingLinearLayoutManager.this
-                    .computeScrollVectorForPosition(targetPosition);
+            return SnappingLinearLayoutManager.this.computeScrollVectorForPosition(targetPosition);
         }
 
         @Override
