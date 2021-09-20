@@ -6,10 +6,12 @@
     <!-- Contact card animations -->
     <integer name="contact_to_trash_anim_speed">700</integer>
     <integer name="contact_add_fade_in_start_position">50</integer>
-    <integer name="contact_add_fade_in_anim_speed">300</integer>
+    <integer name="contact_add_fade_in_anim_speed">500</integer>
     <integer name="contact_add_fade_in_position_speed_factor">150</integer>
+    <integer name="contact_move_slide_anim_speed">350</integer>
 
     <!-- Other animations -->
     <integer name="refresh_rotation_anim_speed">500</integer>
-    <dimen name="trash_notification_bounce_height">2dp</dimen>
+    <dimen name="trash_notification_bounce_height">1dp</dimen>
+    <integer name="trash_can_opener_anim_speed">300</integer>
 </resources>

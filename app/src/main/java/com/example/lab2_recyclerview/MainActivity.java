@@ -1,6 +1,7 @@
 package com.example.lab2_recyclerview;
 
 import android.annotation.SuppressLint;
+import android.graphics.drawable.AnimatedVectorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.TypedValue;
@@ -42,13 +43,13 @@ import java.util.function.Function;
 public class MainActivity extends AppCompatActivity {
     public ArrayList<ContactDataModel> contacts;
     public ArrayList<ContactDataModel> deleted_contacts;
-
-    ExtendedFloatingActionButton restore_fab;
-    BadgeDrawable trash_counter;
-
-    RecyclerView contacts_recyclerview;
-    ContactAdapter adapter;
     public static ContactCardClickListener listener;
+
+    private ExtendedFloatingActionButton restore_fab;
+    private BadgeDrawable trash_counter;
+
+    private RecyclerView contacts_recyclerview;
+    private ContactAdapter adapter;
 
     // Setup contact deletion when clicking on contact card
     class ContactCardClickListener implements View.OnClickListener {
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         contacts_recyclerview = this.findViewById(R.id.contacts_recyclerview);
         contacts_recyclerview.setLayoutManager(new SnappingLinearLayoutManager(this));
         contacts_recyclerview.setAdapter(adapter);
+        // Setup animations for contact cards
         contacts_recyclerview.setItemAnimator(new SimpleItemAnimator() {
             @Override
             public boolean animateRemove(RecyclerView.ViewHolder holder) {
@@ -105,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 final float[] translate_values = new float[]{Math.abs(trash_icon_coords[0] - trash_icon_view.getWidth()/3f - (item_view.getX() + item_view.getWidth())),
                         Math.abs(trash_icon_coords[1] - trash_icon_view.getHeight()/3f - (item_view.getY() + item_view.getHeight()))};
 
-                setAppBarExpanded(true);
+                setAppBarExpanded(true); // Show app bar for the trash icon
                 item_view.animate()
                     .translationXBy(translate_values[0])
                     .translationYBy(-translate_values[1]) // Minus sign for translating upward
@@ -114,11 +116,13 @@ public class MainActivity extends AppCompatActivity {
                     .scaleY(0f)
                     .setDuration(anim_duration)
                     .setInterpolator(new LinearOutSlowInInterpolator())
-                    // Start trash badge update (with bounce animation) a bit earlier for smoother transition
-                    .withStartAction(() -> { runDelayed(() -> updateTrashCounter(deleted_contacts.size()), Math.round(0.7*anim_duration)); })
+                    // Start trash badge update (with bounce animation) a bit later for smoother transition with trash opening
+                    .withStartAction(() -> runDelayed(() -> updateTrashCounter(deleted_contacts.size()), Math.round(1.2*anim_duration)))
                     // Remove the view from screen
-                    .withEndAction(() -> { item_view.setVisibility(View.GONE); })
+                    .withEndAction(() -> item_view.setVisibility(View.GONE))
                     .start();
+
+                runDelayed(() -> startTrashCanOpeningAnimation(), Math.round(0.3*anim_duration)); // Adjust opening to wait for item to move close to trash can icon
 
                 return false;
             }
@@ -146,15 +150,25 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean animateMove(RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
-                // TODO : Prevent animation 'jump' => Make animation directly in Adapter ?
                 View item_view = holder.itemView;
+                final int duration = getResources().getInteger(R.integer.contact_move_slide_anim_speed);
 
-                item_view.setTranslationY(toY - fromY + 50f);
+                /*
+                    Problem : if user is scrolling while the recycler view is moving items, they end up being misaligned potentially on top of each other, ...
+
+                    'Dirty' solution : prevent user from scrolling until items are moved be even that doesn't prevent all cases if user is spamming
+                                       the card deletion and trying to scroll at the same time.
+                 */
+                ((SnappingLinearLayoutManager)(contacts_recyclerview.getLayoutManager())).setScrollEnabled(false);
+                // Sliding animation for items re-arranging after item remove
+                item_view.setY(fromY);
                 item_view.animate()
-                        .translationYBy(-50f)
-                        .setDuration(1000)
+                        .y(toY)
+                        .setDuration(duration)
                         .setInterpolator(new FastOutSlowInInterpolator())
                         .start();
+
+                runDelayed(() -> ((SnappingLinearLayoutManager)(contacts_recyclerview.getLayoutManager())).setScrollEnabled(true), duration); // Restore scroll after animation
 
                 return false;
             }
@@ -237,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             });
 
             v.startAnimation(refresh_anim);
-            v.setEnabled(false);
+            v.setEnabled(false); // Prevent refresh spamming
         });
 
         return super.onCreateOptionsMenu(menu);
@@ -301,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
             // TODO : See if needs animation on restoring too
             // Show animation if new contact added to trash bin
             if (count > trash_counter.getNumber())
-                bounceTrashAnimation();
+                startBounceTrashAnimation();
 
             trash_counter.setNumber(count);
         } else {
@@ -310,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void bounceTrashAnimation() {
+    private void startBounceTrashAnimation() {
         View v = findViewById(R.id.action_trash_bin);
         final float bounce_height = getResources().getDimension(R.dimen.trash_notification_bounce_height);
         final float icon_center_offset = v.findViewById(R.id.iv_trash).getHeight() / (2 * getResources().getDisplayMetrics().density); // Re-center icon after bounce animation
@@ -319,8 +333,6 @@ public class MainActivity extends AppCompatActivity {
         final SpringAnimation springAnim = new SpringAnimation(v, DynamicAnimation.Y, -bounce_height);
         springAnim.getSpring().setStiffness(SpringForce.STIFFNESS_LOW);
         springAnim.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
-        springAnim.start(); // First animate up then down with end listener
-
         springAnim.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
             @Override
             public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
@@ -329,6 +341,13 @@ public class MainActivity extends AppCompatActivity {
                 springAnim.animateToFinalPosition(icon_center_offset);
             }
         });
+
+        springAnim.start(); // First animate up then down with end listener
+    }
+
+    private void startTrashCanOpeningAnimation() {
+        AnimatedVectorDrawable trash_icon_vector = (AnimatedVectorDrawable) ((ImageView)(findViewById(R.id.iv_trash))).getDrawable();
+        trash_icon_vector.start();
     }
 
     private Handler runDelayed(final Runnable func, final long delay) {
