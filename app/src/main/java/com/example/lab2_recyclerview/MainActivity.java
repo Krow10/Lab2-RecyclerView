@@ -1,7 +1,11 @@
 package com.example.lab2_recyclerview;
 
 import android.annotation.SuppressLint;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.VectorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.TypedValue;
@@ -15,11 +19,13 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
@@ -38,7 +44,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.function.Function;
 
 public class MainActivity extends AppCompatActivity {
     public ArrayList<ContactDataModel> contacts;
@@ -57,22 +62,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View v) { removeItem(v); }
-
-        private void removeItem(View v) {
-            final int selectedItemPosition = contacts_recyclerview.getChildAdapterPosition(v);
-
-            try {
-                ContactDataModel removed_contact = contacts.remove(selectedItemPosition);
-                deleted_contacts.add(removed_contact);
-                adapter.notifyItemRemoved(selectedItemPosition);
-
-                // Re-enable button since we have contact to restore
-                if (!restore_fab.isEnabled())
-                    setRestoreFabEnabled(true);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                System.err.println("Error removing contact : " + e.toString());
-            }
-        }
     }
 
     @Override
@@ -99,30 +88,38 @@ public class MainActivity extends AppCompatActivity {
                 View item_view = holder.itemView;
                 View trash_icon_view = findViewById(R.id.action_trash_bin);
 
-                final int anim_duration = getResources().getInteger(R.integer.contact_to_trash_anim_speed);
-                final int[] trash_icon_coords = new int[2];
-                trash_icon_view.getLocationOnScreen(trash_icon_coords);
+                // Check if item was deleted from click or from swipe
+                final boolean item_swiped = Math.abs(item_view.getX()) > 0;
 
-                // Calculate distances from card to trash icon
-                final float[] translate_values = new float[]{Math.abs(trash_icon_coords[0] - trash_icon_view.getWidth()/3f - (item_view.getX() + item_view.getWidth())),
-                        Math.abs(trash_icon_coords[1] - trash_icon_view.getHeight()/3f - (item_view.getY() + item_view.getHeight()))};
+                if (!item_swiped) { // Animate card into trash bin
+                    final int anim_duration = getResources().getInteger(R.integer.contact_to_trash_anim_speed);
+                    final int[] trash_icon_coords = new int[2];
+                    trash_icon_view.getLocationOnScreen(trash_icon_coords);
 
-                setAppBarExpanded(true); // Show app bar for the trash icon
-                item_view.animate()
-                    .translationXBy(translate_values[0])
-                    .translationYBy(-translate_values[1]) // Minus sign for translating upward
-                    .translationZ(2f) // Bring card in front of others
-                    .scaleX(0f)
-                    .scaleY(0f)
-                    .setDuration(anim_duration)
-                    .setInterpolator(new LinearOutSlowInInterpolator())
-                    // Start trash badge update (with bounce animation) a bit later for smoother transition with trash opening
-                    .withStartAction(() -> runDelayed(() -> updateTrashCounter(deleted_contacts.size()), Math.round(1.2*anim_duration)))
-                    // Remove the view from screen
-                    .withEndAction(() -> item_view.setVisibility(View.GONE))
-                    .start();
+                    // Calculate distances from card to trash icon
+                    final float[] translate_values = new float[]{Math.abs(trash_icon_coords[0] - trash_icon_view.getWidth() / 3f - (item_view.getX() + item_view.getWidth())),
+                            Math.abs(trash_icon_coords[1] - trash_icon_view.getHeight() / 3f - (item_view.getY() + item_view.getHeight()))};
 
-                runDelayed(() -> startTrashCanOpeningAnimation(), Math.round(0.3*anim_duration)); // Adjust opening to wait for item to move close to trash can icon
+                    setAppBarExpanded(true); // Show app bar for the trash icon
+                    item_view.animate()
+                            .translationXBy(translate_values[0])
+                            .translationYBy(-translate_values[1]) // Minus sign for translating upward
+                            .translationZ(2f) // Bring animated card in front of others
+                            .scaleX(0f)
+                            .scaleY(0f)
+                            .setDuration(anim_duration)
+                            .setInterpolator(new LinearOutSlowInInterpolator())
+                            // Start trash badge update (with bounce animation) a bit later for smoother transition with trash opening
+                            .withStartAction(() -> runDelayed(() -> updateTrashCounter(deleted_contacts.size()), Math.round(1.2 * anim_duration)))
+                            // Remove the view from screen
+                            .withEndAction(() -> item_view.setVisibility(View.GONE))
+                            .start();
+
+                    // Adjust trash can opening to wait for the item to move closer to the icon
+                    runDelayed(() -> startTrashCanOpeningAnimation(), Math.round(0.3 * anim_duration));
+                } else {
+                    updateTrashCounter(deleted_contacts.size());
+                }
 
                 return false;
             }
@@ -154,12 +151,13 @@ public class MainActivity extends AppCompatActivity {
                 final int duration = getResources().getInteger(R.integer.contact_move_slide_anim_speed);
 
                 /*
-                    Problem : if user is scrolling while the recycler view is moving items, they end up being misaligned potentially on top of each other, ...
+                    Problem : If user is scrolling while the recycler view is moving items, they end up being misaligned potentially on top of each other, ...
 
-                    'Dirty' solution : prevent user from scrolling until items are moved be even that doesn't prevent all cases if user is spamming
+                    'Dirty' solution : Prevent user from scrolling until items are moved be even that doesn't prevent all cases if user is spamming
                                        the card deletion and trying to scroll at the same time.
                  */
                 ((SnappingLinearLayoutManager)(contacts_recyclerview.getLayoutManager())).setScrollEnabled(false);
+
                 // Sliding animation for items re-arranging after item remove
                 item_view.setY(fromY);
                 item_view.animate()
@@ -189,6 +187,64 @@ public class MainActivity extends AppCompatActivity {
             public boolean isRunning() { return false; }
         });
 
+        // Setup delete on item swipe (left or right)
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) { return false; }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int swipeDir) { removeItem(viewHolder.itemView); }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                viewHolder.itemView.setAlpha(1.f); // Restore card transparency if user releases swipe but do not delete item
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && isCurrentlyActive) {
+                    View itemView = viewHolder.itemView;
+
+                    // Setup swiped card background (red color + trash icon)
+                    VectorDrawable swipe_delete_background_icon = (VectorDrawable) ResourcesCompat.getDrawable(getResources(), R.drawable.ic_baseline_delete_24, null);
+                    GradientDrawable swipe_delete_background_fill = new GradientDrawable();
+                    swipe_delete_background_fill.setBounds(
+                            Math.round(itemView.getLeft()),
+                            Math.round(itemView.getTop() + dpToPixels(3)), // Small offset for the margin between items in recycler view
+                            Math.round(itemView.getLeft() + itemView.getWidth()),
+                            Math.round(itemView.getTop() + itemView.getHeight() - dpToPixels(3)));
+                    swipe_delete_background_fill.setColor(ResourcesCompat.getColor(getResources(), R.color.red, null));
+
+                    Rect back_coords = swipe_delete_background_fill.getBounds();
+                    final boolean is_swiping_to_right = dX > 0;
+                    final float icon_scale = 1.5f;
+
+                    // Calculate horizontal  offset from background depending on swipe direction
+                    final float x_offset = (is_swiping_to_right ? 1 : -1) * (back_coords.centerY()
+                            - back_coords.top
+                            - swipe_delete_background_icon.getIntrinsicHeight()
+                            + (is_swiping_to_right ? 0 : 1) * icon_scale * swipe_delete_background_icon.getIntrinsicWidth());
+
+                    swipe_delete_background_icon.setBounds(
+                            Math.round((is_swiping_to_right ? back_coords.left : back_coords.right) + x_offset),
+                            Math.round(back_coords.centerY() - icon_scale*swipe_delete_background_icon.getIntrinsicHeight()/2),
+                            Math.round((is_swiping_to_right ? back_coords.left : back_coords.right) + icon_scale*swipe_delete_background_icon.getIntrinsicWidth() + x_offset),
+                            Math.round(back_coords.centerY() + icon_scale*swipe_delete_background_icon.getIntrinsicHeight()/2));
+
+                    swipe_delete_background_fill.draw(c);
+                    swipe_delete_background_icon.draw(c);
+
+                    // Slide the card in the swipe direction and make it more transparent as it gets closer to edge of screen
+                    final float alpha = 1.f - Math.abs(dX) / (float) itemView.getWidth();
+                    itemView.setAlpha(alpha);
+                    itemView.setTranslationX(dX);
+                } else {
+                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                }
+            }
+        }).attachToRecyclerView(contacts_recyclerview);
+
         // Setup contact restore from Floating Action Button
         restore_fab = findViewById(R.id.restore_fab);
         restore_fab.setOnClickListener((View view) -> {
@@ -198,7 +254,12 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyItemInserted(0);
                 updateTrashCounter(deleted_contacts.size());
 
-                // TODO : [BUG] Sometimes item is not finished inserting before starting scroll which cause card 'add' animation to not be rendered
+                /*
+                    Problem : Sometimes item is not finished inserting before starting scroll which cause card 'add' animation to not be rendered.
+                              This is due to the insert and scroll occurring in different threads.
+
+                    Solution : None really viable.
+                 */
                 contacts_recyclerview.smoothScrollToPosition(0); // Scroll back to top
                 setAppBarExpanded(true); // Show app bar to stay consistent with manual scroll behavior
 
@@ -223,9 +284,10 @@ public class MainActivity extends AppCompatActivity {
         ImageView trash_iv = trash_fl.findViewById(R.id.iv_trash);
 
         // Offset the badge (converted from dp) to prevent clipping when count gets bigger
-        final Function<Float, Integer> dpToPixels = (dip) -> Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, getResources().getDisplayMetrics()));
-        trash_counter.setHorizontalOffset(dpToPixels.apply(3.5f));
-        trash_counter.setVerticalOffset(dpToPixels.apply(.5f));
+        trash_counter.setHorizontalOffset(dpToPixels(3.5f));
+        trash_counter.setVerticalOffset(dpToPixels(.5f));
+        trash_counter.setBadgeTextColor(ResourcesCompat.getColor(getResources(), R.color.white, null));
+        trash_counter.setBackgroundColor(ResourcesCompat.getColor(getResources(), R.color.red, null));
         trash_counter.setAlpha(0); // For some reason 'setVisible(false)' is not working when app is starting up so use alpha to hide the empty red dot instead
 
         // Setup trash counter badge to attach to trash icon
@@ -290,6 +352,22 @@ public class MainActivity extends AppCompatActivity {
         queue.add(jsonObjectRequest);
     }
 
+    private void removeItem(View v) {
+        final int selectedItemPosition = contacts_recyclerview.getChildAdapterPosition(v);
+
+        try {
+            ContactDataModel removed_contact = contacts.remove(selectedItemPosition);
+            deleted_contacts.add(removed_contact);
+            adapter.notifyItemRemoved(selectedItemPosition);
+
+            // Re-enable button since we have contact to restore
+            if (!restore_fab.isEnabled())
+                setRestoreFabEnabled(true);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("Error removing contact : " + e.toString());
+        }
+    }
+
     private void setRestoreFabEnabled(final boolean enabled) {
         if (enabled) {
             restore_fab.extend();
@@ -312,13 +390,15 @@ public class MainActivity extends AppCompatActivity {
                 trash_counter.setVisible(true);
             }
 
-            // TODO : See if needs animation on restoring too
             // Show animation if new contact added to trash bin
             if (count > trash_counter.getNumber())
                 startBounceTrashAnimation();
+            else
+                startTrashCanOpeningAnimation();
 
             trash_counter.setNumber(count);
         } else {
+            startTrashCanOpeningAnimation();
             trash_counter.setVisible(false);
             trash_counter.setNumber(0);
         }
@@ -355,5 +435,9 @@ public class MainActivity extends AppCompatActivity {
         handler.postDelayed(func, delay);
 
         return handler;
+    }
+
+    private int dpToPixels(float dip) {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, getResources().getDisplayMetrics()));
     }
 }

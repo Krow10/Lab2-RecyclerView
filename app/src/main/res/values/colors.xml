@@ -7,4 +7,12 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- App theme colors -->
+    <color name="brown_500">#FF795548</color>
+    <color name="brown_700">#FF5D4037</color>
+    <color name="green_200">#FFA5D6A7</color>
+    <color name="green_500">#FF4CAF50</color>
+    <color name="green_700">#FF388E3B</color>
+    <color name="red">#FFB00020</color>
 </resources>

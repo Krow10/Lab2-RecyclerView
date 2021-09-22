@@ -1,10 +1,10 @@
 package com.example.lab2_recyclerview;
 
 public class ContactDataModel {
-    private String name;
-    private String emailAddress;
-    private String phoneNumber;
-    private String imageUrl;
+    private final String name;
+    private final String emailAddress;
+    private final String phoneNumber;
+    private final String imageUrl;
 
     public ContactDataModel(String name, String emailAddress, String phoneNumber, String imageUrl){
         this.name = name;

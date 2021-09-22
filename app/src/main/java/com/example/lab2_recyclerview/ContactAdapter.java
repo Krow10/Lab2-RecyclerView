@@ -15,7 +15,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 
 public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactViewHolder>{
-    private ArrayList<ContactDataModel> data;
+    private final ArrayList<ContactDataModel> data;
 
     public class ContactViewHolder extends RecyclerView.ViewHolder {
         TextView name_textview;

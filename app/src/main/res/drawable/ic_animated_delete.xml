@@ -3,5 +3,5 @@
     android:drawable="@drawable/ic_baseline_delete_24">
     <target
         android:animation="@animator/ic_delete_animation"
-        android:name="trash_bin_bottom"/>
+        android:name="trash_bin_top"/>
 </animated-vector>
