@@ -252,6 +252,9 @@ public class MainActivity extends AppCompatActivity {
                 ContactDataModel restored_contact = deleted_contacts.remove(deleted_contacts.size() - 1);
                 contacts.add(0, restored_contact);
                 adapter.notifyItemInserted(0);
+
+                // Trash can icon animation and update
+                startTrashCanOpeningAnimation();
                 updateTrashCounter(deleted_contacts.size());
 
                 /*
@@ -390,15 +393,12 @@ public class MainActivity extends AppCompatActivity {
                 trash_counter.setVisible(true);
             }
 
-            // Show animation if new contact added to trash bin
+            // Show bounce animation if new contact added to trash bin
             if (count > trash_counter.getNumber())
                 startBounceTrashAnimation();
-            else
-                startTrashCanOpeningAnimation();
 
             trash_counter.setNumber(count);
         } else {
-            startTrashCanOpeningAnimation();
             trash_counter.setVisible(false);
             trash_counter.setNumber(0);
         }
